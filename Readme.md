@@ -85,7 +85,8 @@ const config: StorybookConfig = {
 export default config;
 ```
 .storybook/preview.ts
-```import type { Preview } from '@storybook/react-vite';
+```
+import type { Preview } from '@storybook/react-vite';
 
 export const parameters: Preview['parameters'] = {
   actions: { argTypesRegex: '^on[A-Z].*' },
