@@ -235,3 +235,245 @@ export const SuccessfulClickTest: Story = {
 pnpm dev         # Vite app → http://localhost:5173
 pnpm storybook   # Storybook → http://localhost:6006
 ```
+
+
+## Login Box Story And Component
+
+```
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { within, userEvent, waitFor, expect } from 'storybook/test';
+import { LoginBox } from './LoginBox.js';
+
+const meta: Meta<typeof LoginBox> = {
+  title: 'Components/LoginBox',
+  component: LoginBox,
+  tags: ['autodocs'],
+  parameters: {
+    a11y: { disable: false },
+    chromatic: { disableSnapshot: false },
+  },
+};
+export default meta;
+
+type Story = StoryObj<typeof LoginBox>;
+
+export const Default: Story = {
+  args: {
+    onLogin: () => {},
+    loading: false,
+    error: '',
+  },
+};
+
+export const WithError: Story = {
+  args: {
+    onLogin: () => {},
+    loading: false,
+    error: 'Invalid username or password',
+  },
+};
+
+export const Loading: Story = {
+  args: {
+    onLogin: () => {},
+    loading: true,
+    error: '',
+  },
+};
+
+export const DisabledButton: Story = {
+  args: {
+    onLogin: () => {},
+    loading: true,
+    error: '',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole('button', { name: /logging in/i });
+    expect(button).toBeDisabled();
+  },
+};
+
+export const ValidationTest: Story = {
+  args: {
+    onLogin: () => {},
+    loading: false,
+    error: '',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Try submitting empty form
+    await userEvent.click(canvas.getByRole('button', { name: /login/i }));
+    await expect(canvas.getByText('Username is required')).toBeInTheDocument();
+    await expect(canvas.getByText('Password is required')).toBeInTheDocument();
+  },
+};
+
+export const SuccessfulLoginTest: Story = {
+  args: {
+    onLogin: () => {},
+    loading: false,
+    error: '',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.type(canvas.getByLabelText('Username'), 'storybook');
+    await userEvent.type(canvas.getByLabelText('Password'), 'testpass');
+    await userEvent.click(canvas.getByRole('button', { name: /login/i }));
+    // No error messages should be present
+    await waitFor(() => {
+      expect(canvas.queryByText('Username is required')).toBeNull();
+      expect(canvas.queryByText('Password is required')).toBeNull();
+    });
+  },
+};
+
+export const AccessibilityTest: Story = {
+  args: {
+    onLogin: () => {},
+    loading: false,
+    error: '',
+  },
+  parameters: {
+    a11y: {
+      // Custom accessibility rules can be added here
+    },
+  },
+};
+
+export const SuccessfulClickTest: Story = {
+  args: {
+    onLogin: () => {},
+    loading: false,
+    error: '',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole('button', { name: /login/i });
+    await userEvent.click(button);
+    expect(button).not.toBeDisabled();
+  },
+};
+```
+
+```
+import React, { useState } from 'react';
+
+export interface LoginBoxProps {
+  onLogin: (username: string, password: string) => void;
+  error?: string;
+  loading?: boolean;
+}
+
+export const LoginBox: React.FC<LoginBoxProps> = ({ onLogin, error, loading }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [touched, setTouched] = useState({ username: false, password: false });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTouched({ username: true, password: true });
+    if (username && password) {
+      onLogin(username, password);
+    }
+  };
+
+  const usernameError = touched.username && !username ? 'Username is required' : '';
+  const passwordError = touched.password && !password ? 'Password is required' : '';
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      aria-label="login form"
+      style={{
+        maxWidth: 320,
+        margin: '2rem auto',
+        padding: '2rem',
+        border: '1px solid #ccc',
+        borderRadius: 8,
+        background: '#fff',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+        fontFamily: 'inherit',
+      }}
+    >
+      <h2 style={{ marginBottom: '1rem' }}>Login</h2>
+      <div style={{ marginBottom: '1rem' }}>
+        <label htmlFor="username" style={{ display: 'block', marginBottom: 4 }}>
+          Username
+        </label>
+        <input
+          id="username"
+          type="text"
+          value={username}
+          autoComplete="username"
+          onChange={e => setUsername(e.target.value)}
+          onBlur={() => setTouched(t => ({ ...t, username: true }))}
+          aria-invalid={!!usernameError}
+          aria-describedby="username-error"
+          style={{
+            width: '100%',
+            padding: 8,
+            border: usernameError ? '1px solid #d32f2f' : '1px solid #ccc',
+            borderRadius: 4,
+          }}
+        />
+        {usernameError && (
+          <div id="username-error" style={{ color: '#d32f2f', fontSize: 12 }}>
+            {usernameError}
+          </div>
+        )}
+      </div>
+      <div style={{ marginBottom: '1rem' }}>
+        <label htmlFor="password" style={{ display: 'block', marginBottom: 4 }}>
+          Password
+        </label>
+        <input
+          id="password"
+          type="password"
+          value={password}
+          autoComplete="current-password"
+          onChange={e => setPassword(e.target.value)}
+          onBlur={() => setTouched(t => ({ ...t, password: true }))}
+          aria-invalid={!!passwordError}
+          aria-describedby="password-error"
+          style={{
+            width: '100%',
+            padding: 8,
+            border: passwordError ? '1px solid #d32f2f' : '1px solid #ccc',
+            borderRadius: 4,
+          }}
+        />
+        {passwordError && (
+          <div id="password-error" style={{ color: '#d32f2f', fontSize: 12 }}>
+            {passwordError}
+          </div>
+        )}
+      </div>
+      {error && (
+        <div role="alert" style={{ color: '#d32f2f', marginBottom: '1rem' }}>
+          {error}
+        </div>
+      )}
+      <button
+        type="submit"
+        disabled={loading}
+        style={{
+          width: '100%',
+          padding: 10,
+          background: '#1ea7fd',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 4,
+          fontWeight: 600,
+          cursor: loading ? 'not-allowed' : 'pointer',
+          opacity: loading ? 0.7 : 1,
+        }}
+      >
+        {loading ? 'Logging in...' : 'Login'}
+      </button>
+    </form>
+  );
+};
+
+export default LoginBox;
+```
